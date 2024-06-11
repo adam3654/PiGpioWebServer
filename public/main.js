@@ -3,7 +3,7 @@
 
 /************PROCESS DATA TO/FROM Client****************************/
 
-	
+const ioPorts = ['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19'];
 var socket = io(); //load socket.io-client and connect to the host that serves the page
 window.addEventListener("load", function(){ //when page loads
   if( isMobile.any() ) {
@@ -11,171 +11,137 @@ window.addEventListener("load", function(){ //when page loads
     document.addEventListener("touchstart", ReportTouchStart, false);
     document.addEventListener("touchend", ReportTouchEnd, false);
     document.addEventListener("touchmove", TouchMove, false);
-  }else{
+  } else {
 //    alert('Desktop');  
     document.addEventListener("mouseup", ReportMouseUp, false);
     document.addEventListener("mousedown", ReportMouseDown, false);
   }
-  
+  disableAllButtons();
+
 });
 
+function enableAllButtons(){
+  const btns = document.querySelectorAll('button');
+  for (const btn of btns) {
+    btn.disabled = false;
+  }
+}
 
+function disableAllButtons(){
+  const btns = document.querySelectorAll('button');
+  for (const btn of btns) {
+    if (btn.id !== "Enable") {
+      btn.disabled = true;
+    }    
+  }
+}
 
+// for (const pin of ioPorts) {
+//   let gpioPin = `GPIO${pin}`;
+//   //Update gpio feedback when server changes GPIO state
+//     socket.on(gpioPin, function (data) {  
+//       var myJSON = JSON.stringify(data);
+//       document.getElementById(gpioPin).checked = data;
+//     });
+// }
 
-//Update gpio feedback when server changes LED state
-socket.on('GPIO26', function (data) {  
-//  console.log('GPIO26 function called');
-//  console.log(data);
-  var myJSON = JSON.stringify(data);
-//  console.log(myJSON);
-  document.getElementById('GPIO26').checked = data;
-//  console.log('GPIO26: '+data.toString());
-});
-
-
-//Update gpio feedback when server changes LED state
-socket.on('GPIO20', function (data) {  
-//  console.log('GPIO20 function called');
-//  console.log(data);
-  var myJSON = JSON.stringify(data);
- // console.log(myJSON);
-  document.getElementById('GPIO20').checked = data;
-//  console.log('GPIO20: '+data.toString());
-});
-
-
-
-//Update gpio feedback when server changes LED state
-socket.on('GPIO21', function (data) {  
-//  console.log('GPIO21 function called');
- // console.log(data);
-  var myJSON = JSON.stringify(data);
- // console.log(myJSON);
-  document.getElementById('GPIO21').checked = data;
-// console.log('GPIO21: '+data.toString());
-});
-
-
-
-//Update gpio feedback when server changes LED state
-socket.on('GPIO16', function (data) {  
-//  console.log('GPIO16 function called');
-//  console.log(data);
-  var myJSON = JSON.stringify(data);
-//  console.log(myJSON);
-  document.getElementById('GPIO16').checked = data;
-//  console.log('GPIO16: '+data.toString());
-});
-
+socket.on("EnableFireOK", enableAllButtons());
+socket.on("eStop", disableAllButtons());
 
 function ReportTouchStart(e) {
   var y = e.target.previousElementSibling;
   if (y !== null) var x = y.id;
-  if (x !== null) { 
-  // Now we know that x is defined, we are good to go.
-    if (x === "GPIO26") {
- //     console.log("GPIO26 toggle");
-      socket.emit("GPIO26T");  // send GPIO button toggle to node.js server
-    } else if (x === "GPIO20") {
- //     console.log("GPIO20 toggle");
-      socket.emit("GPIO20T");  // send GPIO button toggle to node.js server
-    } else if (x === "GPIO21") {
-//      console.log("GPIO21 toggle");
-      socket.emit("GPIO21T");  // send GPIO button toggle to node.js server
-    } else if (x === "GPIO16") {
-  //    console.log("GPIO16 toggle");
-      socket.emit("GPIO16T");  // send GPIO button toggle to node.js server
-    } 
+  if (x !== null) {
+    socket.emit(x)
   }
-
-  if (e.target.id === "GPIO26M") {
-    socket.emit("GPIO26", 1); 
-    document.getElementById('GPIO26').checked = 1;
-  } else if (e.target.id === "GPIO20M") {
- //   console.log("GPIO20 pressed");
-    socket.emit("GPIO20", 1); 
-    document.getElementById('GPIO20').checked = 1;
-  } else if (e.target.id === "GPIO21M") {
-  //  console.log("GPIO21 pressed");
-    socket.emit("GPIO21", 1); 
-    document.getElementById('GPIO21').checked = 1;
-  } else if (e.target.id === "GPIO16M") {
-//    console.log("GPIO16 pressed");
-    socket.emit("GPIO16", 1); 
-    document.getElementById('GPIO16').checked = 1;
-  }
+  // if (x !== null && x.startsWith("GPIO")) { 
+  //   // Now we know that x is defined, we are good to go.
+  //   if (x.endsWith("M")) {
+  //     //momentary
+  //     let gpioPin = x.slice(0, -1);
+  //     socket.emit(gpioPin, 1); 
+  //     document.getElementById(gpioPin).checked = 1;
+  //   } else {
+  //     //toggle
+  //     socket.emit(`${x}T`);  // send GPIO button toggle to node.js server  
+  //   }
+  // }
 }
 
 function ReportTouchEnd(e) {
-  if (e.target.id === "GPIO26M") {
-    socket.emit("GPIO26", 0); 
-    document.getElementById('GPIO26').checked = 0;
-  } else if (e.target.id === "GPIO20M") {
-    socket.emit("GPIO20", 0); 
-    document.getElementById('GPIO20').checked = 0;
-  } else if (e.target.id === "GPIO21M") {
-    socket.emit("GPIO21", 0); 
-    document.getElementById('GPIO21').checked = 0;
-  } else if (e.target.id === "GPIO16M") {
-    socket.emit("GPIO16", 0); 
-    document.getElementById('GPIO16').checked = 0;
+  let eventID = e.target.id;
+  if (eventID !== null) {
+    if (eventID === "Sequential") {
+      var ddObj = document.getElementById("Time");
+    var ddVal = ddObj.value;
+    socket.emit(eventID, ddVal);
+    } else if (eventID === "Enable") {
+      socket.emit(eventID, 1);
+    } else {
+      socket.emit(eventID, 1);
+    }
+    
   }
 }
+
+  // if (eventID.endsWith("M")) {
+  //   let gpioPin = eventID.slice(0, -1);
+  //   socket.emit(gpioPin, 0); 
+  //   document.getElementById(gpioPin).checked = 0;
+  // } 
+
+  // if (eventID === "Sequential") {
+  //   var ddObj = document.getElementById("Time");
+  //   var ddVal = ddObj.value;
+  //   socket.emit("Sequential", ddVal);
+  // }
+//}
 
 function ReportMouseDown(e) {
   
   var y = e.target.previousElementSibling;
   if (y !== null) var x = y.id;
-  if (x !== null) { 
-  // Now we know that x is defined, we are good to go.
-    if (x === "GPIO26") {
- //     console.log("GPIO26 toggle");
-      socket.emit("GPIO26T");  // send GPIO button toggle to node.js server
-    } else if (x === "GPIO20") {
-//     console.log("GPIO20 toggle");
-      socket.emit("GPIO20T");  // send GPIO button toggle to node.js server
-    } else if (x === "GPIO21") {
- //     console.log("GPIO21 toggle");
-      socket.emit("GPIO21T");  // send GPIO button toggle to node.js server
-    } else if (x === "GPIO16") {
- //     console.log("GPIO16 toggle");
-      socket.emit("GPIO16T");  // send GPIO button toggle to node.js server
-    } 
-  }
-  
-  if (e.target.id === "GPIO26M") {
- //   console.log("GPIO26 pressed");
-    socket.emit("GPIO26", 1); 
-    document.getElementById('GPIO26').checked = 1;
-  } else if (e.target.id === "GPIO20M") {
-//    console.log("GPIO20 pressed");
-    socket.emit("GPIO20", 1); 
-    document.getElementById('GPIO20').checked = 1;
-  } else if (e.target.id === "GPIO21M") {
-//    console.log("GPIO21 pressed");
-    socket.emit("GPIO21", 1); 
-    document.getElementById('GPIO21').checked = 1;
-  } else if (e.target.id === "GPIO16M") {
-//    console.log("GPIO16 pressed");
-    socket.emit("GPIO16", 1); 
+  if (x !== null && x.startsWith("GPIO")) { 
+    // Now we know that x is defined, we are good to go.
+    if (x.endsWith("M")) {
+      //momentary
+      let gpioPin = x.slice(0, -1);
+      socket.emit(gpioPin, 1); 
+      document.getElementById(gpioPin).checked = 1;
+    } else {
+      //toggle
+      socket.emit(`${x}T`);  // send GPIO button toggle to node.js server  
+    }
   }
 }
 
 
 function ReportMouseUp(e) {
-  if (e.target.id === "GPIO26M") {
-    socket.emit("GPIO26", 0); 
-    document.getElementById('GPIO26').checked = 0;
-  } else if (e.target.id === "GPIO20M") {
-    socket.emit("GPIO20", 0); 
-    document.getElementById('GPIO20').checked = 0;
-  } else if (e.target.id === "GPIO21M") {
-    socket.emit("GPIO21", 0); 
-    document.getElementById('GPIO21').checked = 0;
-  } else if (e.target.id === "GPIO16M") {
-    socket.emit("GPIO16", 0); 
-    document.getElementById('GPIO16').checked = 0;
+
+  let eventID = e.target.id;
+
+  if (eventID !== null) {
+    if (eventID === "Sequential") {
+      var ddObj = document.getElementById("Time");
+    var ddVal = ddObj.value;
+    socket.emit(eventID, ddVal);
+    } else if (eventID === "Enable") {
+      socket.emit(eventID, 1);
+    } else {
+      socket.emit(eventID, 1);
+    }
+    
   }
+  // if (eventID.endsWith("M")) {
+  //   let gpioPin = eventID.slice(0, -1);
+  //   socket.emit(gpioPin, 0); 
+  //   document.getElementById(gpioPin).checked = 0;
+  // } 
+  // if (eventID === "Sequential") {
+  //   var ddObj = document.getElementById("Time");
+  //   var ddVal = ddObj.value;
+  //   socket.emit("Sequential", ddVal);
+  // }
 }
 
 function TouchMove(e) {
