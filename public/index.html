@@ -5,68 +5,179 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Steve's Projects">
     <title>Pi GPIO</title>
-    <link rel="icon" type="image/png" href="../images/favicon.ico" />
-    <link rel="stylesheet" type="text/css" href="../css/styles.css" />
+    <link rel="icon" type="image/png" href="./images/favicon.ico" />
+    <link rel="stylesheet" type="text/css" href="./css/styles.css" />
    </head>
 
 <body oncopy="return false" oncut="return false" onpaste="return false">
+
+  <!--Move to main.js-->
+  <script>
+    function enableAllButtons(){
+      const btns = document.querySelectorAll('button');
+      for (const btn of btns) {
+        btn.disabled = false;
+      }
+    }
+  </script>
   
   <div class="noselect">
   
   <div class="keypadContainer">
     <h1 class="TextCenter">Control GPIO</h1>
-    
+    <!--
+      ['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19'];
+    -->
     <div class="GpioContainer">
-      <strong>GPIO26</strong>
+      <strong>R1:T1</strong>
       <br>
-      <label class="switch">
-        <input type="checkbox" id="GPIO26" disabled >
-        <span class="slider round"></span>
-      </label>	
-      <br>
-      <button id="GPIO26M"></button>
+      <button id="GPIO2" onclick="this.disabled=true;"></button>
       <br>
     </div>
     
     <div class="GpioContainer">
-      <strong>GPIO20</strong>
+      <strong>R1:T2</strong>
       <br>
-      <label class="switch">
-        <input type="checkbox" id="GPIO20" disabled>
-        <span class="slider round"></span>
-      </label>	
-      <br>
-      <button id="GPIO20M"></button>
+      <button id="GPIO3" onclick="this.disabled=true;"></button>
       <br>
     </div>
     
     <div class="GpioContainer">
-      <strong>GPIO21</strong>
+      <strong>R1:T3</strong>
       <br>
-      <label class="switch">
-        <input type="checkbox" id="GPIO21" disabled>
-        <span class="slider round"></span>
-      </label>	
-      <br>
-      <button id="GPIO21M"></button>
+      <button id="GPIO4" onclick="this.disabled=true;"></button>
       <br>
     </div>
     
     <div class="GpioContainer">
-      <strong>GPIO16</strong>
+      <strong>R1:T4</strong>
       <br>
-      <label class="switch">
-      <input type="checkbox" id="GPIO16" disabled>
-      <span class="slider round"></span>
-      </label>	
-      <br>
-      <button id="GPIO16M"></button>
+      <button id="GPIO5" onclick="this.disabled=true;"></button>
       <br>
     </div>
     
+    <div class="GpioContainer">
+      <strong>R1:T5</strong>
+      <br>
+      <button id="GPIO6" onclick="this.disabled=true;"></button>
+      <br>
+    </div>
+
+    <div class="GpioContainer">
+      <strong>R1:T6</strong>
+      <br>
+      <button id="GPIO7" onclick="this.disabled=true;"></button>
+      <br>
+    </div>
+    <br>
+    <div class="GpioContainer">
+      <strong>R2:T1</strong>
+      <br>
+      <button id="GPIO8" onclick="this.disabled=true;"></button>
+      <br>
     </div>
     
+    <div class="GpioContainer">
+      <strong>R2:T2</strong>
+      <br>
+      <button id="GPIO9" onclick="this.disabled=true;"></button>
+      <br>
+    </div>
+    
+    <div class="GpioContainer">
+      <strong>R2:T3</strong>
+      <br>
+      <button id="GPIO10" onclick="this.disabled=true;"></button>
+      <br>
+    </div>
+    
+    <div class="GpioContainer">
+      <strong>R2:T4</strong>
+      <br>
+      <button id="GPIO11" onclick="this.disabled=true;"></button>
+      <br>
+    </div>
+    
+    <div class="GpioContainer">
+      <strong>R2:T5</strong>
+      <br>
+      <button id="GPIO12" onclick="this.disabled=true;"></button>
+      <br>
+    </div>
+
+    <div class="GpioContainer">
+      <strong>R2:T6</strong>
+      <br>
+      <button id="GPIO13" onclick="this.disabled=true;"></button>
+      <br>
+    </div>
+    <br>
+    <div class="GpioContainer">
+      <strong>R3:T1</strong>
+      <br>
+      <button id="GPIO14" onclick="this.disabled=true;"></button>
+      <br>
+    </div>
+    
+    <div class="GpioContainer">
+      <strong>R3:T2</strong>
+      <br>
+      <button id="GPIO15" onclick="this.disabled=true;"></button>
+      <br>
+    </div>
+    
+    <div class="GpioContainer">
+      <strong>R3:T3</strong>
+      <br>
+      <button id="GPIO16" onclick="this.disabled=true;"></button>
+      <br>
+    </div>
+    
+    <div class="GpioContainer">
+      <strong>R3:T4</strong>
+      <br>
+      <button id="GPIO17" onclick="this.disabled=true;"></button>
+      <br>
+    </div>
+    
+    <div class="GpioContainer">
+      <strong>R3:T5</strong>
+      <br>
+      <button id="GPIO18" onclick="this.disabled=true;"></button>
+      <br>
+    </div>
+
+    <div class="GpioContainer">
+      <strong>R3:T6</strong>
+      <br>
+      <button id="GPIO19" onclick="this.disabled=true;"></button>
+      <br>
+    </div>   
+    
+    </div>
+    <br>
+    <div class="keypadContainer">
+      <label for="Time">Fire all:</label>
+
+      <select name="Time" id="Time">
+        <option value="Random">Random</option>
+        <option value="500">500</option>
+        <option value="750">750</option>
+        <option value="1000">1000</option>
+        <option value="2000">2000</option>
+      </select>
+      <label>(ms delay)</label>
+
+      <button id="Sequential"> Fire All </button>
+      <br>
+    </div>
+    <br>
+    <div class="keypadContainer">
+      <button id="Enable"> Enable Fire Mode </button>
+    </div>
+
   </div>
+  
     
   <!-- include socket.io client side script -->
   <script src="/socket.io/socket.io.js"></script>
