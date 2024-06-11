@@ -4,20 +4,61 @@ var url = require('url');
 var path = require('path');
 var io = require('socket.io','net')(http) //require socket.io module and pass the http object (server)
 var Gpio = require('onoff').Gpio; //include onoff to interact with the GPIO
-var LED26 = new Gpio(26, 'out'); //use GPIO pin 26 as output
-var LED20 = new Gpio(20, 'out'); //use GPIO pin 20 as output
-var LED21 = new Gpio(21, 'out'); //use GPIO pin 21 as output
-var LED16 = new Gpio(16, 'out'); //use GPIO pin 16 as output
-
-
-var GPIO26value = 0;  // Turn on the LED by default
-var GPIO20value = 0;  // Turn on the LED by default
-var GPIO21value = 1;  // Turn on the LED by default
-var GPIO16value = 1;  // Turn on the LED by default
 
 /****** CONSTANTS******************************************************/
 
 const WebPort = 80;
+const ioPorts = ['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19'];
+const eStopInputPin = new Gpio(20, 'in', 'both');
+var OkToEnable = false;
+
+eStopInputPin.watch((err, value) => {
+	if (err) {
+		throw err;
+	}
+	OkToEnable = value;
+});
+class IoPin {
+	constructor(pin) {
+		this.name = `GPIO${pin}`;
+		this.gpio = new Gpio(pin, 'low'); //use GPIO pin as output, default low
+		this.value = 0;
+	}
+}
+
+let i = 0
+for (const pinNum in ioPorts) {
+	if (i === 0) {
+		var gpioPins = new Array ([new IoPin(pinNum)]);		
+	} else {
+		gpioPins.push(new IoPin(pinNum));
+	}
+	i++;
+}
+
+function FireOnPin(pin) {
+	let pinIndex = ioPorts.indexOf(pin);
+	let firePin = gpioPins[pinIndex].gpio;
+	firePin.writeSync(1);
+	setTimeout(turnOffPin(firePin),500);
+}
+
+function turnOffPin(firePin) {
+	firePin.writeSync(0);
+}
+
+/**
+ * Returns a random integer between min (inclusive) and max (inclusive).
+ * The value is no lower than min (or the next integer greater than min
+ * if min isn't an integer) and no greater than max (or the next integer
+ * lower than max if max isn't an integer).
+ * Using Math.round() will give you a non-uniform distribution!
+ */
+function getRandomInt(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
 
 /* if you want to run WebPort on a port lower than 1024 without running
@@ -33,16 +74,17 @@ const WebPort = 80;
 
 // Start http webserver
 http.listen(WebPort, function() {  // This gets call when the web server is first started.
-	LED26.writeSync(GPIO26value); //turn LED on or off
-	LED20.writeSync(GPIO20value); //turn LED on or off
-	LED21.writeSync(GPIO21value); //turn LED on or off
-	LED16.writeSync(GPIO16value); //turn LED on or off
+	let pLen = gpioPins.length;
+
+	for (let i = 0; i < pLen; i++) {
+		gpioPins[i].gpio.writeSync(gpioPins[i].value);
+	}
 	console.log('Server running on Port '+WebPort);
-	console.log('GPIO26 = '+GPIO26value);
-	console.log('GPIO20 = '+GPIO20value);
-	console.log('GPIO21 = '+GPIO21value);
-	console.log('GPIO16 = '+GPIO16value);
-	} 
+
+	for (let i = 0; i < pLen; i++) {
+		console.log(`${gpioPins[i].name} = ${gpioPins[i].value}`);
+	}
+} 
 ); 
 
 
@@ -103,20 +145,22 @@ function handler (req, res) {
     });
 }
 
+function eventHandler (event, data) {
+	
+	
+}
+
 
 // Execute this when web server is terminated
 process.on('SIGINT', function () { //on ctrl+c
-  LED26.writeSync(0); // Turn LED off
-  LED26.unexport(); // Unexport LED GPIO to free resources
-  
-  LED20.writeSync(0); // Turn LED off
-  LED20.unexport(); // Unexport LED GPIO to free resources
-  
-  LED21.writeSync(0); // Turn LED off
-  LED21.unexport(); // Unexport LED GPIO to free resources
-  
-  LED16.writeSync(0); // Turn LED off
-  LED16.unexport(); // Unexport LED GPIO to free resources
+
+	let pLen = gpioPins.length;
+
+	for (let i = 0; i < pLen; i++) {
+		gpioPins[i].writeSync(0); // Turn LED off
+		gpioPins[i].unexport(); // Unexport GPIO to free resources
+	}
+	eStopInputPin.unexport();
 
   process.exit(); //exit completely
 }); 
@@ -125,95 +169,50 @@ process.on('SIGINT', function () { //on ctrl+c
 /****** io.socket is the websocket connection to the client's browser********/
 
 io.sockets.on('connection', function (socket) {// WebSocket Connection
-    console.log('A new client has connectioned. Send LED status');
-    socket.emit('GPIO26', GPIO26value);
-    socket.emit('GPIO20', GPIO20value);
-    socket.emit('GPIO21', GPIO21value);
-    socket.emit('GPIO16', GPIO16value);
-    
-    // this gets called whenever client presses GPIO26 toggle light button
-    socket.on('GPIO26T', function(data) { 
-	if (GPIO26value) GPIO26value = 0;
-	else GPIO26value = 1;
-	console.log('new GPIO26 value='+GPIO26value);
-	LED26.writeSync(GPIO26value); //turn LED on or off
-	console.log('Send new GPIO26 state to ALL clients');
-	io.emit('GPIO26', GPIO26value); //send button status to ALL clients 
-    });
-    
-    // this gets called whenever client presses GPIO20 toggle light button
-    socket.on('GPIO20T', function(data) { 
-	if (GPIO20value) GPIO20value = 0;
-	else GPIO20value = 1;
-	console.log('new GPIO20 value='+GPIO20value);
-	LED20.writeSync(GPIO20value); //turn LED on or off
-	console.log('Send new GPIO20 state to ALL clients');
-	io.emit('GPIO20', GPIO20value); //send button status to ALL clients 
-    });
-    
-    // this gets called whenever client presses GPIO21 toggle light button
-    socket.on('GPIO21T', function(data) { 
-	if (GPIO21value) GPIO21value = 0;
-	else GPIO21value = 1;
-	console.log('new GPIO21 value='+GPIO21value);
-	LED21.writeSync(GPIO21value); //turn LED on or off
-	console.log('Send new GPIO21 state to ALL clients');
-	io.emit('GPIO21', GPIO21value); //send button status to ALL clients 	
-    });
-    
-    // this gets called whenever client presses GPIO16 toggle light button
-    socket.on('GPIO16T', function(data) { 
-	if (GPIO16value) GPIO16value = 0;
-	else GPIO16value = 1;
-	console.log('new GPIO16 value='+GPIO16value);
-	LED16.writeSync(GPIO16value); //turn LED on or off
-	console.log('Send new GPIO16 state to ALL clients');
-	io.emit('GPIO16', GPIO16value); //send button status to ALL clients 	
-    });
+    console.log('A new client has connectioned. Send GPIO status');
 
-    
-    // this gets called whenever client presses GPIO26 momentary light button
-    socket.on('GPIO26', function(data) { 
-	GPIO26value = data;
-	if (GPIO26value != LED26.readSync()) { //only change LED if status has changed
-	    LED26.writeSync(GPIO26value); //turn LED on or off
-	    console.log('Send new GPIO26 state to ALL clients');
-	    io.emit('GPIO26', GPIO26value); //send button status to ALL clients 
-	};	
-    });
-    
-    // this gets called whenever client presses GPIO20 momentary light button
-    socket.on('GPIO20', function(data) { 
-	GPIO20value = data;
-	if (GPIO20value != LED20.readSync()) { //only change LED if status has changed
-	    LED20.writeSync(GPIO20value); //turn LED on or off
-	    console.log('Send new GPIO20 state to ALL clients');
-	    io.emit('GPIO20', GPIO20value); //send button status to ALL clients 
-	};
+	let pLen = gpioPins.length;
 
-    });
-    
-    // this gets called whenever client presses GPIO21 momentary light button
-    socket.on('GPIO21', function(data) { 
-	GPIO21value = data;
-	if (GPIO21value != LED21.readSync()) { //only change LED if status has changed
-	    LED21.writeSync(GPIO21value); //turn LED on or off
-	    console.log('Send new GPIO21 state to ALL clients');
-	    io.emit('GPIO21', GPIO21value); //send button status to ALL clients e
-	};
+	for (let i = 0; i < pLen; i++) {
+		socket.emit(gpioPins[i].name, gpioPins[i].value);
+	}
 
-    });
-    
-    // this gets called whenever client presses GPIO16 momentary light button
-    socket.on('GPIO16', function(data) { 
-	GPIO16value = data;
-	if (GPIO16value != LED16.readSync()) { //only change LED if status has changed
-	    LED16.writeSync(GPIO16value); //turn LED on or off
-	    console.log('Send new GPIO16 state to ALL clients');
-	    io.emit('GPIO16', GPIO16value); //send button status to ALL clients 
-	};
-	
-    });
+	socket.onAny((event, args) => {
+		let eventText = event.value
+	let dataVal = args.value
+
+	if (eventText.startsWith("GPIO")) {
+		eventText = eventText.replace("GPIO","");
+		FireOnPin(eventText);
+	}
+	if (eventText === "Enable") {
+		if (OkToEnable) {
+			socket.emit("EnableFireOK", 1);
+		} else {
+			socket.emit("eStop", 0);
+		}
+	}
+	if (eventText === "Sequential") {
+		let firstShot = true;
+		let pLen = gpioPins.length;
+		let delay = 2000;
+		for (let i = 0; i < pLen; i++) {
+			if (firstShot) {
+				FireOnPin(ioPorts[i]);
+				firstShot = false;	
+			} else {
+				if (dataVal === "Random") {			
+					delay = getRandomInt(500,4000);
+				} else {
+					delay = dataVal;
+				}
+				setTimeout(FireOnPin(ioPorts[i]), delay);
+		
+			}
+		}
+
+	}
+	});
  
  
 
@@ -224,6 +223,8 @@ io.sockets.on('connection', function (socket) {// WebSocket Connection
     
 
 }); 
+
+
 
 
  
