@@ -30,7 +30,7 @@ function enableAllButtons(){
 function disableAllButtons(){
   const btns = document.querySelectorAll('button');
   for (const btn of btns) {
-    if (btn.id !== "Enable") {
+    if (btn.name !== "Enable") {
       btn.disabled = true;
     }    
   }
@@ -46,102 +46,54 @@ function disableAllButtons(){
 // }
 
 socket.on("EnableFireOK", enableAllButtons());
-socket.on("eStop", disableAllButtons());
+socket.on("DisableButtons", disableAllButtons());
+
+class eventPayload {
+  Name;
+  Id;
+  Value;
+  constructor (name, id, value) {
+    this.Name = name;
+    this.Id = id;
+    this.Value = value;
+  }
+}
 
 function ReportTouchStart(e) {
-  var y = e.target.previousElementSibling;
-  if (y !== null) var x = y.id;
-  if (x !== null) {
-    socket.emit(x)
-  }
-  // if (x !== null && x.startsWith("GPIO")) { 
-  //   // Now we know that x is defined, we are good to go.
-  //   if (x.endsWith("M")) {
-  //     //momentary
-  //     let gpioPin = x.slice(0, -1);
-  //     socket.emit(gpioPin, 1); 
-  //     document.getElementById(gpioPin).checked = 1;
-  //   } else {
-  //     //toggle
-  //     socket.emit(`${x}T`);  // send GPIO button toggle to node.js server  
-  //   }
-  // }
+
 }
 
 function ReportTouchEnd(e) {
-  let eventID = e.target.id;
-  if (eventID !== null) {
-    if (eventID === "Sequential") {
+  let payload = new eventPayload(e.target.name, e.target.id, e.target.value);
+  if (payload.name !== null) {
+    if (payload.name === "Sequential") {
       var ddObj = document.getElementById("Time");
-    var ddVal = ddObj.value;
-    socket.emit(eventID, ddVal);
-    } else if (eventID === "Enable") {
-      socket.emit(eventID, 1);
+    payload.Value = ddObj.value;
+    socket.emit(eventName, payload);
     } else {
-      socket.emit(eventID, 1);
-    }
-    
+      socket.emit(eventName, payload);
+    }    
   }
 }
 
-  // if (eventID.endsWith("M")) {
-  //   let gpioPin = eventID.slice(0, -1);
-  //   socket.emit(gpioPin, 0); 
-  //   document.getElementById(gpioPin).checked = 0;
-  // } 
-
-  // if (eventID === "Sequential") {
-  //   var ddObj = document.getElementById("Time");
-  //   var ddVal = ddObj.value;
-  //   socket.emit("Sequential", ddVal);
-  // }
-//}
 
 function ReportMouseDown(e) {
-  
-  var y = e.target.previousElementSibling;
-  if (y !== null) var x = y.id;
-  if (x !== null && x.startsWith("GPIO")) { 
-    // Now we know that x is defined, we are good to go.
-    if (x.endsWith("M")) {
-      //momentary
-      let gpioPin = x.slice(0, -1);
-      socket.emit(gpioPin, 1); 
-      document.getElementById(gpioPin).checked = 1;
-    } else {
-      //toggle
-      socket.emit(`${x}T`);  // send GPIO button toggle to node.js server  
-    }
-  }
+
 }
+
 
 
 function ReportMouseUp(e) {
-
-  let eventID = e.target.id;
-
-  if (eventID !== null) {
-    if (eventID === "Sequential") {
+  let payload = new eventPayload(e.target.name, e.target.id, e.target.value);
+  if (payload.name !== null) {
+    if (payload.name === "Sequential") {
       var ddObj = document.getElementById("Time");
-    var ddVal = ddObj.value;
-    socket.emit(eventID, ddVal);
-    } else if (eventID === "Enable") {
-      socket.emit(eventID, 1);
+    payload.Value = ddObj.value;
+    socket.emit(eventName, payload);
     } else {
-      socket.emit(eventID, 1);
-    }
-    
+      socket.emit(eventName, payload);
+    }    
   }
-  // if (eventID.endsWith("M")) {
-  //   let gpioPin = eventID.slice(0, -1);
-  //   socket.emit(gpioPin, 0); 
-  //   document.getElementById(gpioPin).checked = 0;
-  // } 
-  // if (eventID === "Sequential") {
-  //   var ddObj = document.getElementById("Time");
-  //   var ddVal = ddObj.value;
-  //   socket.emit("Sequential", ddVal);
-  // }
 }
 
 function TouchMove(e) {

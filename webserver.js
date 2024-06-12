@@ -11,19 +11,51 @@ const WebPort = 80;
 const ioPorts = ['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19'];
 const eStopInputPin = new Gpio(20, 'in', 'both');
 var OkToEnable = false;
+var OkToFire = false;
+
+
 
 eStopInputPin.watch((err, value) => {
-	if (err) {
-		throw err;
+	if (value) {
+		OkToEnable = true;
+		socket.emit("DisableButtons",0);
+		OkToFire = false;
+	} else {
+		OkToFire = true;
 	}
-	OkToEnable = value;
 });
+
+//get initial state of pin
+let initialState = eStopInputPin.readSync();
+if (initialState == false) {
+	//server started with safety relay 'off' (12v to firing relays)
+	OkToFire = true;
+	OkToEnable = true;
+}
 class IoPin {
+	gpio;
+	name;
+	value;
+
 	constructor(pin) {
 		this.name = `GPIO${pin}`;
-		this.gpio = new Gpio(pin, 'low'); //use GPIO pin as output, default low
+		this.gpio = new Gpio(parseInt(pin), 'low'); //use GPIO pin as output, default low
 		this.value = 0;
 	}
+	Read() {
+		this.value = this.gpio.readSync();
+		return this.value;
+	}
+	Write(val) {
+		if (val === 1 || val === 0) {
+			this.gpio.writeSync(val);
+			this.value = val;
+		}	
+	}
+	Destroy(){
+		this.gpio.unexport();
+	}
+
 }
 
 let i = 0
@@ -38,13 +70,12 @@ for (const pinNum in ioPorts) {
 
 function FireOnPin(pin) {
 	let pinIndex = ioPorts.indexOf(pin);
-	let firePin = gpioPins[pinIndex].gpio;
-	firePin.writeSync(1);
-	setTimeout(turnOffPin(firePin),500);
+	gpioPins[pinIndex].Write(1);
+	setTimeout(turnOffPin(gpioPins[pinIndex]),500);
 }
 
-function turnOffPin(firePin) {
-	firePin.writeSync(0);
+function turnOffPin(ioPin) {
+	ioPin.Write(0);
 }
 
 /**
@@ -77,7 +108,7 @@ http.listen(WebPort, function() {  // This gets call when the web server is firs
 	let pLen = gpioPins.length;
 
 	for (let i = 0; i < pLen; i++) {
-		gpioPins[i].gpio.writeSync(gpioPins[i].value);
+		gpioPins[i].Write(0);
 	}
 	console.log('Server running on Port '+WebPort);
 
@@ -145,10 +176,6 @@ function handler (req, res) {
     });
 }
 
-function eventHandler (event, data) {
-	
-	
-}
 
 
 // Execute this when web server is terminated
@@ -157,8 +184,8 @@ process.on('SIGINT', function () { //on ctrl+c
 	let pLen = gpioPins.length;
 
 	for (let i = 0; i < pLen; i++) {
-		gpioPins[i].writeSync(0); // Turn LED off
-		gpioPins[i].unexport(); // Unexport GPIO to free resources
+		gpioPins[i].Write(0); // Turn LED off
+		gpioPins[i].Destroy(); // Unexport GPIO to free resources
 	}
 	eStopInputPin.unexport();
 
@@ -171,57 +198,51 @@ process.on('SIGINT', function () { //on ctrl+c
 io.sockets.on('connection', function (socket) {// WebSocket Connection
     console.log('A new client has connectioned. Send GPIO status');
 
-	let pLen = gpioPins.length;
+	//let pLen = gpioPins.length;
 
-	for (let i = 0; i < pLen; i++) {
-		socket.emit(gpioPins[i].name, gpioPins[i].value);
-	}
+	// for (let i = 0; i < pLen; i++) {
+	// 	socket.emit(gpioPins[i].name, gpioPins[i].value);
+	// }
 
-	socket.onAny((event, args) => {
-		let eventText = event.value
-	let dataVal = args.value
-
-	if (eventText.startsWith("GPIO")) {
-		eventText = eventText.replace("GPIO","");
-		FireOnPin(eventText);
-	}
-	if (eventText === "Enable") {
-		if (OkToEnable) {
-			socket.emit("EnableFireOK", 1);
-		} else {
-			socket.emit("eStop", 0);
-		}
-	}
-	if (eventText === "Sequential") {
-		let firstShot = true;
-		let pLen = gpioPins.length;
-		let delay = 2000;
-		for (let i = 0; i < pLen; i++) {
-			if (firstShot) {
-				FireOnPin(ioPorts[i]);
-				firstShot = false;	
-			} else {
-				if (dataVal === "Random") {			
-					delay = getRandomInt(500,4000);
-				} else {
-					delay = dataVal;
-				}
-				setTimeout(FireOnPin(ioPorts[i]), delay);
-		
-			}
-		}
-
-	}
+	socket.on('pin', function(data) {
+		let pinNum = data.value;
+		if (OkToFire) FireOnPin(pinNum);		
 	});
- 
- 
+
+	socket.on('Enable', function(data) {
+		if (OkToFire && OkToEnable) {
+			socket.emit("EnableFireOK", 1);
+			OkToEnable = false;
+		} 
+	});
+
+	socket.on('Sequential', function(data) {
+		if (OkToFire) {
+			socket.emit("DisableButtons",0);
+			let firstShot = true;
+			let pLen = gpioPins.length;
+			let delay = 2000;
+			for (let i = 0; i < pLen; i++) {
+				if (firstShot) {
+					FireOnPin(ioPorts[i]);
+					firstShot = false;	
+				} else {
+					if (dataVal === "Random") {			
+						delay = getRandomInt(500,4000);
+					} else {
+						delay = data.value;
+					}
+					setTimeout(FireOnPin(ioPorts[i]), delay);			
+				}
+			}
+			OkToFire = false;
+		}		
+	});
 
     //Whenever someone disconnects this piece of code executed
     socket.on('disconnect', function () {
 	console.log('A user disconnected');
     });
-    
-
 }); 
 
 
