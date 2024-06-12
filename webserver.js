@@ -8,8 +8,8 @@ var Gpio = require('onoff').Gpio; //include onoff to interact with the GPIO
 /****** CONSTANTS******************************************************/
 
 const WebPort = 80;
-const ioPorts = ['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19'];
-const eStopInputPin = new Gpio(20, 'in', 'both');
+const ioPorts = ['13', '15', '16', '18', '22', '7', '3', '5', '24', '26', '19', '21', '23', '8', '10', '32', '36', '38'];
+var eStopInputPin = new Gpio(37, 'in', 'both');
 var OkToEnable = false;
 
 eStopInputPin.watch((err, value) => {
@@ -20,7 +20,7 @@ eStopInputPin.watch((err, value) => {
 });
 class IoPin {
 	constructor(pin) {
-		this.name = `GPIO${pin}`;
+		this.name = `PIN${pin}`;
 		this.gpio = new Gpio(pin, 'low'); //use GPIO pin as output, default low
 		this.value = 0;
 	}
@@ -77,7 +77,7 @@ http.listen(WebPort, function() {  // This gets call when the web server is firs
 	let pLen = gpioPins.length;
 
 	for (let i = 0; i < pLen; i++) {
-		gpioPins[i].gpio.writeSync(gpioPins[i].value);
+		gpioPins[i].gpio.writeSync(0);
 	}
 	console.log('Server running on Port '+WebPort);
 
@@ -179,10 +179,10 @@ io.sockets.on('connection', function (socket) {// WebSocket Connection
 
 	socket.onAny((event, args) => {
 		let eventText = event.value
-	let dataVal = args.value
+		let dataVal = args.value
 
-	if (eventText.startsWith("GPIO")) {
-		eventText = eventText.replace("GPIO","");
+	if (eventText.startsWith("PIN")) {
+		eventText = eventText.replace("PIN","");
 		FireOnPin(eventText);
 	}
 	if (eventText === "Enable") {
