@@ -65,13 +65,13 @@ function ReportTouchStart(e) {
 
 function ReportTouchEnd(e) {
   let payload = new eventPayload(e.target.name, e.target.id, e.target.value);
-  if (payload.name !== null) {
-    if (payload.name === "Sequential") {
+  if (payload.Name !== null) {
+    if (payload.Name === "Sequential") {
       var ddObj = document.getElementById("Time");
     payload.Value = ddObj.value;
-    socket.emit(eventName, payload);
+    socket.emit(eventName, ...payload);
     } else {
-      socket.emit(eventName, payload);
+      socket.emit(eventName, ...payload);
     }    
   }
 }
@@ -85,13 +85,13 @@ function ReportMouseDown(e) {
 
 function ReportMouseUp(e) {
   let payload = new eventPayload(e.target.name, e.target.id, e.target.value);
-  if (payload.name !== null) {
-    if (payload.name === "Sequential") {
+  if (payload.Name !== null) {
+    if (payload.Name === "Sequential") {
       var ddObj = document.getElementById("Time");
     payload.Value = ddObj.value;
-    socket.emit(eventName, payload);
+    socket.emit(eventName, ...payload);
     } else {
-      socket.emit(eventName, payload);
+      socket.emit(eventName, ...payload);
     }    
   }
 }

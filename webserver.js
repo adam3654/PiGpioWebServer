@@ -8,8 +8,8 @@ var Gpio = require('onoff').Gpio; //include onoff to interact with the GPIO
 /****** CONSTANTS******************************************************/
 
 const WebPort = 80;
-const ioPorts = ['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19'];
-const eStopInputPin = new Gpio(20, 'in', 'both');
+const ioPorts = ['0','2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '21', '22'];
+const eStopInputPin = new Gpio(23, 'in', 'both');
 var OkToEnable = false;
 var OkToFire = false;
 
@@ -23,59 +23,36 @@ eStopInputPin.watch((err, value) => {
 	} else {
 		OkToFire = true;
 	}
+	console.log(`input pin changed to: ${value}`)
 });
 
 //get initial state of pin
 let initialState = eStopInputPin.readSync();
+console.log(`input pin val: ${initialState}`);
 if (initialState == false) {
 	//server started with safety relay 'off' (12v to firing relays)
 	OkToFire = true;
 	OkToEnable = true;
 }
-class IoPin {
-	gpio;
-	name;
-	value;
-
-	constructor(pin) {
-		this.name = `GPIO${pin}`;
-		this.gpio = new Gpio(parseInt(pin), 'low'); //use GPIO pin as output, default low
-		this.value = 0;
-	}
-	Read() {
-		this.value = this.gpio.readSync();
-		return this.value;
-	}
-	Write(val) {
-		if (val === 1 || val === 0) {
-			this.gpio.writeSync(val);
-			this.value = val;
-		}	
-	}
-	Destroy(){
-		this.gpio.unexport();
-	}
-
-}
 
 let i = 0
 for (const pinNum in ioPorts) {
 	if (i === 0) {
-		var gpioPins = new Array ([new IoPin(pinNum)]);		
+		var gpioPins = new Array ([new Gpio(parseInt(pinNum), 'low')]);		
 	} else {
-		gpioPins.push(new IoPin(pinNum));
+		gpioPins.push(new Gpio(parseInt(pinNum), 'low'));
 	}
 	i++;
 }
 
 function FireOnPin(pin) {
 	let pinIndex = ioPorts.indexOf(pin);
-	gpioPins[pinIndex].Write(1);
-	setTimeout(turnOffPin(gpioPins[pinIndex]),500);
+	gpioPins[pinIndex].writeSync(1);
+	setTimeout(turnOffPin(pinIndex),500);
 }
 
-function turnOffPin(ioPin) {
-	ioPin.Write(0);
+function turnOffPin(pinIndex) {
+	gpioPins[pinIndex].writeSync(0);
 }
 
 /**
@@ -107,14 +84,14 @@ function getRandomInt(min, max) {
 http.listen(WebPort, function() {  // This gets call when the web server is first started.
 	let pLen = gpioPins.length;
 
-	for (let i = 0; i < pLen; i++) {
-		gpioPins[i].Write(0);
-	}
+	// for (let i = 0; i < pLen; i++) {
+	// 	gpioPins[i].gpio.Write(0);
+	// }
 	console.log('Server running on Port '+WebPort);
 
-	for (let i = 0; i < pLen; i++) {
-		console.log(`${gpioPins[i].name} = ${gpioPins[i].value}`);
-	}
+	// for (let i = 0; i < pLen; i++) {
+	// 	console.log(`${gpioPins[i].name} = ${gpioPins[i].value}`);
+	// }
 } 
 ); 
 
@@ -184,8 +161,8 @@ process.on('SIGINT', function () { //on ctrl+c
 	let pLen = gpioPins.length;
 
 	for (let i = 0; i < pLen; i++) {
-		gpioPins[i].Write(0); // Turn LED off
-		gpioPins[i].Destroy(); // Unexport GPIO to free resources
+		gpioPins[i].writeSync(0); // Turn LED off
+		gpioPins[i].unexport(); // Unexport GPIO to free resources
 	}
 	eStopInputPin.unexport();
 
